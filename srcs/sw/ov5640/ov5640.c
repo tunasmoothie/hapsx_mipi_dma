@@ -106,7 +106,7 @@ void OV5640_Init(){
 }
 
 
-void OV5640_SetVidMode(int vid_mode){
+void OV5640_SetVidMode(OV5640_vid_mode vid_mode){
 
 	config_word_t *cfg_;
 	int cnt;
@@ -146,7 +146,7 @@ void OV5640_SetVidMode(int vid_mode){
 }
 
 
-void OV5640_SetAwb(int awb_mode){
+void OV5640_SetAwb(OV5640_awb_mode awb_mode){
 
 	config_word_t *cfg_;
 	int cnt;
@@ -180,3 +180,4 @@ void OV5640_SetAwb(int awb_mode){
 
 	xil_printf("			Done \n\r\n\r");
 }
+

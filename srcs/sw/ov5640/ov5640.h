@@ -35,14 +35,19 @@
 
 /************************** Constant Definitions *****************************/
 
-#define MODE_720P_1280_720_60fps   0
-#define MODE_1080P_1920_1080_15fps 1
-#define MODE_1080P_1920_1080_30fps 2
-#define MODE_1080P_1920_1080_30fps_336M_MIPI 3
+typedef enum {
+	MODE_720P_1280_720_60fps,
+	MODE_1080P_1920_1080_15fps,
+	MODE_1080P_1920_1080_30fps,
+	MODE_1080P_1920_1080_30fps_336M_MIPI
+} OV5640_vid_mode;
 
-#define AWB_DISABLED   0
-#define AWB_SIMPLE     1
-#define AWB_ADVANCED   2
+typedef enum {
+	AWB_DISABLED,
+	AWB_SIMPLE,
+	AWB_ADVANCED
+}OV5640_awb_mode;
+
 
 /******************************************************************************/
 
@@ -99,7 +104,7 @@ void OV5640_Init();
  * Register words defined in ov5640_cfg_words.h
  * Default mode is MODE_1080P_1920_1080_30fps
  */
-void OV5640_SetVidMode(int vid_mode);
+void OV5640_SetVidMode(OV5640_vid_mode vid_mode);
 
 
 /*
@@ -107,7 +112,8 @@ void OV5640_SetVidMode(int vid_mode);
  * Register words defined in ov5640_cfg_words.h
  * Defualt mode is AWB_DISABLED
  */
-void OV5640_SetAwb(int awb);
+void OV5640_SetAwb(OV5640_awb_mode awb);
 
 
 #endif
+
