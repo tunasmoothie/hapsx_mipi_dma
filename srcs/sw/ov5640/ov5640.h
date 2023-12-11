@@ -28,12 +28,17 @@
 				  *  by using protection macros */
 
 
-/***************************** Include Files *********************************/
+/***************************** Include Files ********************************/
 
-#include <stdio.h>
+#include "xil_types.h"
+#include "xil_assert.h"
+#include "xstatus.h"
 
+/************************** Constant Definitions ****************************/
 
-/************************** Constant Definitions *****************************/
+#define OV5640_I2C_BASEADDR   0x3CU
+
+/**************************** Type Definitions ******************************/
 
 typedef enum {
 	MODE_720P_1280_720_60fps,
@@ -49,70 +54,80 @@ typedef enum {
 }OV5640_awb_mode;
 
 
-/******************************************************************************/
-
 typedef struct {
 	uint16_t addr;
 	uint8_t data;
 } config_word_t;
 
-/************************* Function Definitions *******************************/
+
+/************************** Function Prototypes *****************************/
 
 /*
  * IIC register write to OV5640. (2 byte address, 1 byte data)
- * @param     addr is 2-byte IIC address to write to.
- * @param     val  is 1-byte value to write.
+ * @param     iic_axi_device_addr   is the AXI address of I2C device that carries out the operation.
+ * @param     addr                  is 2-byte IIC address to write to.
+ * @param     val                   is 1-byte value to write.
  */
-int OV5640_SetReg(uint16_t addr, uint8_t val);
+int OV5640_WriteReg(UINTPTR iic_axi_device_addr, UINTPTR addr, uint8_t val);
 
 
 /*
  * IIC register read from OV5640.
- * @param     addr is 2-byte IIC address to read from.
+ * @param     iic_axi_device_addr   is the AXI address of I2C device that carries out the operation.
+ * @param     addr                  is 2-byte IIC address to read from.
+ * @param     recv                  is a pointer to the container for received data.
  */
-uint8_t OV5640_GetReg(uint16_t addr);
+uint8_t OV5640_ReadReg(UINTPTR iic_axi_device_addr, UINTPTR addr, uint8_t* recv);
 
 
 /*
  * Read registers 0x300A and 0x300B to check for OV5640 IIC Identifier.
+ * @param     iic_axi_device_addr   is the AXI address of I2C device that carries out the operation.
  */
-void OV5640_Whoami();
+int OV5640_Whoami(UINTPTR iic_axi_device_addr);
 
 
 /*
  * Writes a reset to OV5640 system control register.
  * !! Will halt OV5640 until enable is issued.
+ * @param     iic_axi_device_addr   is the AXI address of I2C device that carries out the operation.
  */
-void OV5640_Reset();
+void OV5640_Reset(UINTPTR iic_axi_device_addr);
 
 
 /*
  * Writes an enable to OV5640 system control register.
+ * @param     iic_axi_device_addr   is the AXI address of I2C device that carries out the operation.
  */
-void OV5640_Enable();
+void OV5640_Enable(UINTPTR iic_axi_device_addr);
 
 
 /*
  * Loads initialization register words to OV5640.
  * Register words defined in ov5640_cfg_words.h
+ * @param     iic_axi_device_addr   is the AXI address of I2C device that carries out the operation.
  */
-void OV5640_Init();
+int OV5640_Init(UINTPTR iic_axi_device_addr);
 
 
 /*
  * Loads video mode register words to OV5640.
  * Register words defined in ov5640_cfg_words.h
  * Default mode is MODE_1080P_1920_1080_30fps
+ * @param     iic_axi_device_addr   is the AXI address of I2C device that carries out the operation.
+ * @param     vid_mode              is the desired video mode.
  */
-void OV5640_SetVidMode(OV5640_vid_mode vid_mode);
+void OV5640_SetVidMode(UINTPTR iic_axi_device_addr, OV5640_vid_mode vid_mode);
 
 
 /*
  * Loads awb mode register words to OV5640.
  * Register words defined in ov5640_cfg_words.h
  * Defualt mode is AWB_DISABLED
+ * @param     iic_axi_device_addr   is the AXI address of I2C device that carries out the operation.
+ * @param     vid_mode              is the desired AWB mode.
  */
-void OV5640_SetAwb(OV5640_awb_mode awb);
+void OV5640_SetAwb(UINTPTR iic_axi_device_addr, OV5640_awb_mode awb);
 
 
 #endif

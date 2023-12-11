@@ -1,5 +1,3 @@
-#include <stdio.h>
-#include "platform.h"
 #include "xil_printf.h"
 #include "sleep.h"
 #include "xparameters.h"
@@ -10,10 +8,7 @@
 #include "ov5640_cfg_wrds.h"
 
 
-#define OV5640_IIC_BASEADDR   0x3C
-
-
-int OV5640_SetReg(uint16_t addr, uint8_t val){
+int OV5640_WriteReg(UINTPTR iic_axi_device_addr, UINTPTR addr, uint8_t val){
 	unsigned Status;
 	uint8_t iic_send[4];
 
@@ -22,7 +17,7 @@ int OV5640_SetReg(uint16_t addr, uint8_t val){
     iic_send[2] = val;
 
     //xil_printf("0x%02x%02x : 0x%02x\r\n", iic_send[0], iic_send[1], iic_send[2] );
-    Status = XIic_Send(XPAR_AXI_IIC_CSI_BASEADDR, OV5640_IIC_BASEADDR, iic_send, 3, XIIC_STOP);
+    Status = XIic_Send(iic_axi_device_addr, OV5640_I2C_BASEADDR, iic_send, 3, XIIC_STOP);
     if(Status == XST_FAILURE){
     	xil_printf("ERROR: Unable to complete IIC operation\r\n");
     	return XST_FAILURE;
@@ -32,7 +27,7 @@ int OV5640_SetReg(uint16_t addr, uint8_t val){
 }
 
 
-uint8_t OV5640_GetReg(uint16_t addr){
+uint8_t OV5640_ReadReg(UINTPTR iic_axi_device_addr, UINTPTR addr, uint8_t* recv){
 	unsigned Status;
 	uint8_t iic_send[4];
 	uint8_t iic_recv[4];
@@ -40,73 +35,86 @@ uint8_t OV5640_GetReg(uint16_t addr){
     iic_send[0] = addr >> 8;
     iic_send[1] = addr & 0x00FF;
 
-	Status = XIic_Send(XPAR_AXI_IIC_CSI_BASEADDR, OV5640_IIC_BASEADDR, iic_send, 2, XIIC_REPEATED_START);
+	Status = XIic_Send(iic_axi_device_addr, OV5640_I2C_BASEADDR, iic_send, 2, XIIC_REPEATED_START);
     if(Status == XST_FAILURE){
     	xil_printf("ERROR: Unable to complete IIC operation\r\n");
     	return XST_FAILURE;
     }
 
-    XIic_Recv(XPAR_AXI_IIC_CSI_BASEADDR, OV5640_IIC_BASEADDR, iic_recv, 1, XIIC_STOP);
+    usleep(10000);
 
-    return iic_recv[0];
+    XIic_Recv(iic_axi_device_addr, OV5640_I2C_BASEADDR, iic_recv, 1, XIIC_STOP);
+    *recv = iic_recv[0];
+
+    return XST_SUCCESS;
 }
 
 
-void OV5640_Reset(){
-	uint8_t iic_send[4];
-	iic_send[0] = 0x30;
-	iic_send[1] = 0x08;
-	iic_send[2] = 0x82;
-	XIic_Send(XPAR_AXI_IIC_CSI_BASEADDR, OV5640_IIC_BASEADDR, iic_send, 3, XIIC_STOP);
+void OV5640_Reset(UINTPTR iic_axi_device_addr){
+//	uint8_t iic_send[4];
+//	iic_send[0] = 0x30;
+//	iic_send[1] = 0x08;
+//	iic_send[2] = 0x82;
+	OV5640_WriteReg(iic_axi_device_addr, 0x3008, 0x82);
+	//XIic_Send(XPAR_AXI_IIC_CSI_BASEADDR, OV5640_IIC_BASEADDR, iic_send, 3, XIIC_STOP);
 
 	xil_printf("OV5640 reset & stopped. Waiting for enable signal... \r\n");
 }
 
 
-void OV5640_Enable(){
-	uint8_t iic_send[4];
-	iic_send[0] = 0x30;
-	iic_send[1] = 0x08;
-	iic_send[2] = 0x02;
-	XIic_Send(XPAR_AXI_IIC_CSI_BASEADDR, OV5640_IIC_BASEADDR, iic_send, 3, XIIC_STOP);
-
+void OV5640_Enable(UINTPTR iic_axi_device_addr){
+//	uint8_t iic_send[4];
+//	iic_send[0] = 0x30;
+//	iic_send[1] = 0x08;
+//	iic_send[2] = 0x02;
+//	XIic_Send(XPAR_AXI_IIC_CSI_BASEADDR, OV5640_IIC_BASEADDR, iic_send, 3, XIIC_STOP);
+	OV5640_WriteReg(iic_axi_device_addr, 0x3008, 0x02);
 	xil_printf("OV5640 enabled. \r\n");
 }
 
 
-void OV5640_Whoami(){
+int OV5640_Whoami(UINTPTR iic_axi_device_addr){
 	uint8_t id_h, id_l;
 
 	xil_printf("Reading OV5640 Chip ID \n\r");
 	xil_printf("Registers @  H:0x300A L:0x300B\n\r");
 
-	id_h = OV5640_GetReg(0x300A);
-	id_l = OV5640_GetReg(0x300B);
+	OV5640_ReadReg(iic_axi_device_addr, 0x300A, &id_h);
+	OV5640_ReadReg(iic_axi_device_addr, 0x300B, &id_l);
 
 	xil_printf("			Chip ID = %x%x \r\n", id_h, id_l);
     if(id_h != 0x56 || id_l != 0x40) {
     	xil_printf("ERROR: OV5640 chip ID missing or incorrect\r\n");
-    	return;
+    	return XST_FAILURE;
     }
     else {
     	xil_printf("OV5640 chip ID read success\r\n");
     }
+
+
+    return XST_SUCCESS;
 }
 
 
-void OV5640_Init(){
+int OV5640_Init(UINTPTR iic_axi_device_addr){
+	unsigned Status;
 	xil_printf("Loading initial config...\n\r");
 
 	for (int i = 0; i < sizeof(cfg_init_) / sizeof(cfg_init_[0]); i++){
-		OV5640_SetReg(cfg_init_[i].addr, cfg_init_[i].data);
+		Status = OV5640_WriteReg(iic_axi_device_addr, cfg_init_[i].addr, cfg_init_[i].data);
 		usleep(10000);
+	    if(Status == XST_FAILURE){
+	    	xil_printf("ERROR: Unable to complete IIC operation\r\n");
+	    	return XST_FAILURE;
+	    }
 	}
 
 	xil_printf("			Done \n\r\n\r");
+	return XST_SUCCESS;
 }
 
 
-void OV5640_SetVidMode(OV5640_vid_mode vid_mode){
+void OV5640_SetVidMode(UINTPTR iic_axi_device_addr, OV5640_vid_mode vid_mode){
 
 	config_word_t *cfg_;
 	int cnt;
@@ -137,7 +145,7 @@ void OV5640_SetVidMode(OV5640_vid_mode vid_mode){
 	xil_printf("Loading video config...\n\r");
 
 	for (int i = 0; i < cnt; i++){
-		OV5640_SetReg(cfg_[i].addr, cfg_[i].data);
+		OV5640_WriteReg(iic_axi_device_addr, cfg_[i].addr, cfg_[i].data);
 		usleep(10000);
 	}
 
@@ -146,7 +154,7 @@ void OV5640_SetVidMode(OV5640_vid_mode vid_mode){
 }
 
 
-void OV5640_SetAwb(OV5640_awb_mode awb_mode){
+void OV5640_SetAwb(UINTPTR iic_axi_device_addr, OV5640_awb_mode awb_mode){
 
 	config_word_t *cfg_;
 	int cnt;
@@ -173,7 +181,7 @@ void OV5640_SetAwb(OV5640_awb_mode awb_mode){
 	xil_printf("Loading awb config...\n\r");
 
 	for (int i = 0; i < cnt; i++){
-		OV5640_SetReg(cfg_[i].addr, cfg_[i].data);
+		OV5640_WriteReg(iic_axi_device_addr, cfg_[i].addr, cfg_[i].data);
 		usleep(10000);
 	}
 
